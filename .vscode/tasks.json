@@ -1,0 +1,86 @@
+{
+  "version": "2.0.0",
+  "inputs": [
+    {
+      "id": "agentPrompt",
+      "type": "promptString",
+      "description": "Petición que se enviará a Pi y quedará en el historial local",
+      "password": false
+    }
+  ],
+  "tasks": [
+    {
+      "label": "Configurar .venv",
+      "type": "process",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\setup_venv.ps1"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Petición auditada con Pi",
+      "type": "process",
+      "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+      "args": [
+        "scripts\\invoke_pi.py",
+        "${input:agentPrompt}"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Iniciar Streamlit",
+      "type": "process",
+      "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+      "args": [
+        "-m",
+        "streamlit",
+        "run",
+        "app.py",
+        "--server.address",
+        "127.0.0.1"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Ejecutar pruebas",
+      "type": "process",
+      "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+      "args": [
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Ver historial reciente",
+      "type": "process",
+      "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+      "args": [
+        "scripts\\history.py",
+        "show",
+        "--limit",
+        "50"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Purgar historial",
+      "type": "process",
+      "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+      "args": [
+        "scripts\\history.py",
+        "purge"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}
