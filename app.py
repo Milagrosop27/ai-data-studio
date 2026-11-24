@@ -33,19 +33,27 @@ chat_page = st.Page("app/frontend/chat.py", title="Panel de An谩lisis", icon="馃
 pg = st.navigation([home_page, chat_page])
 
 
-def retomar_conversacion(selected):
-    dataset_path = UPLOAD_DIR / f"{selected.dataset_id}.csv"
+def solicitar_reanudacion(conversation_id: str) -> None:
+    st.session_state.pending_conversation_id = conversation_id
+
+
+def retomar_conversacion(conversation_id: str) -> None:
     dataset = history.conversation_dataset(
-        selected.conversation_id,
+        conversation_id,
         harness="streamlit",
     )
-    if dataset is None or not dataset_path.is_file():
+    if dataset is None:
+        st.sidebar.error("La conversaci贸n ya no est谩 disponible.")
+        return
+
+    dataset_path = UPLOAD_DIR / f"{dataset.dataset_id}.csv"
+    if not dataset_path.is_file():
         st.sidebar.error("El CSV ya no est谩 disponible.")
         return
 
     try:
         history.record_event(
-            conversation_id=selected.conversation_id,
+            conversation_id=conversation_id,
             event_type="agent_action",
             content="Conversaci贸n retomada desde el men煤 lateral",
             harness="streamlit",
@@ -56,9 +64,9 @@ def retomar_conversacion(selected):
         st.sidebar.error(f"No se pudo retomar la conversaci贸n: {error}")
         return
 
-    st.session_state.conversation_id = selected.conversation_id
-    st.session_state.dataset_id = selected.dataset_id
-    st.session_state.active_dataset_id = selected.dataset_id
+    st.session_state.conversation_id = conversation_id
+    st.session_state.dataset_id = dataset.dataset_id
+    st.session_state.active_dataset_id = dataset.dataset_id
     st.session_state.ruta_archivo = str(dataset_path)
     st.session_state.dataset_cargado = True
     st.session_state.agent_executor = None
@@ -68,6 +76,21 @@ def retomar_conversacion(selected):
     st.switch_page("app/frontend/chat.py")
 
 
+def confirmar_destino_pendiente() -> None:
+    pending_conversation_id = st.session_state.pop(
+        "pending_conversation_id",
+        None,
+    )
+    if pending_conversation_id is not None:
+        retomar_conversacion(pending_conversation_id)
+        return
+
+    pending_page = st.session_state.pop("pending_page", None)
+    if pending_page is not None:
+        st.switch_page(pending_page)
+
+
+confirmar_destino_pendiente()
 pg.run()
 
 def solicitar_borrado(item):
@@ -104,9 +127,7 @@ def confirmar_borrado():
             st.session_state.messages_loaded_conversation_id = None
         st.session_state.pending_delete = None
         if st.session_state.get("conversation_id") is None:
-            st.switch_page("app/frontend/home.py")
-        else:
-            st.rerun()
+            st.session_state.pending_page = "app/frontend/home.py"
     except (OSError, sqlite3.Error, ValueError) as error:
         st.sidebar.error(f"No se pudo borrar la conversaci贸n: {error}")
 
@@ -116,7 +137,6 @@ def confirmar_eliminacion_dialog():
     item = st.session_state.get("pending_delete")
     if item is None:
         cancelar_borrado()
-        st.rerun()
         return
 
     st.markdown(
@@ -151,8 +171,8 @@ for item in recent:
     row[0].button(
         item.dataset_name,
         key=f"nav-conversation-{item.conversation_id}",
-        on_click=retomar_conversacion,
-        args=(item,),
+        on_click=solicitar_reanudacion,
+        args=(item.conversation_id,),
         use_container_width=True,
     )
     row[1].button(

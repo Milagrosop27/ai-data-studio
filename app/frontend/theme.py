@@ -147,11 +147,13 @@ h1, h2, h3, p, label, span {
     margin: 0;
 }
 
-[data-testid="stChatInput"] {
+[data-testid="stTextInput"] input {
     border: 1px solid var(--line);
     border-radius: 16px;
     background: rgba(12, 23, 40, 0.96);
     box-shadow: 0 14px 40px rgba(0, 0, 0, 0.22);
+    color: var(--ink);
+    min-height: 42px;
 }
 
 [data-testid="stChatMessage"] {

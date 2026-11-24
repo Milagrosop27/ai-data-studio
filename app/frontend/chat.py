@@ -120,9 +120,22 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-input_usuario = st.chat_input("Escribe tu pregunta sobre el CSV...")
-if input_usuario:
-    st.session_state.prompt_activo = input_usuario
+with st.form("chat-question", clear_on_submit=True, border=False):
+    input_col, send_col = st.columns([12, 1], gap="small")
+    input_usuario = input_col.text_input(
+        "Escribe tu pregunta sobre el CSV...",
+        placeholder="Escribe tu pregunta sobre el CSV...",
+        label_visibility="collapsed",
+    )
+    enviar_pregunta = send_col.form_submit_button(
+        "➤",
+        type="primary",
+        use_container_width=True,
+        help="Enviar pregunta",
+    )
+
+if enviar_pregunta and input_usuario.strip():
+    st.session_state.prompt_activo = input_usuario.strip()
 
 if st.session_state.get("prompt_activo"):
     prompt_actual = st.session_state.prompt_activo
